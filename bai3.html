@@ -1,0 +1,491 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý tài chính cá nhân</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 25px;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #1d4ed8;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .card, .panel {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px #00000010;
+        }
+
+        .card h3 {
+            color: #64748b;
+            font-size: 16px;
+        }
+
+        .amount {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .income {
+            color: #16a34a;
+        }
+
+        .expense {
+            color: #dc2626;
+        }
+
+        .balance {
+            color: #2563eb;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 7px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 11px 18px;
+            margin-top: 18px;
+            border: none;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .progress {
+            width: 100%;
+            height: 24px;
+            background: #e2e8f0;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 10px 0 20px;
+        }
+
+        .bar {
+            height: 100%;
+            width: 0;
+            transition: width 0.4s;
+        }
+
+        .income-bar {
+            background: #22c55e;
+        }
+
+        .expense-bar {
+            background: #ef4444;
+        }
+
+        .history {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 550px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 13px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        th {
+            background: #eff6ff;
+        }
+
+        #message {
+            font-weight: bold;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 12px;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>📊 Quản lý tài chính cá nhân</h1>
+    <p>Theo dõi thu nhập, chi tiêu và số dư của bạn.</p>
+
+    <!-- BÀI 1: TỔNG QUAN -->
+    <div class="cards">
+        <div class="card">
+            <h3>💰 Tổng thu</h3>
+            <div class="amount income" id="totalIncome">0 ₫</div>
+        </div>
+
+        <div class="card">
+            <h3>💸 Tổng chi</h3>
+            <div class="amount expense" id="totalExpense">0 ₫</div>
+        </div>
+
+        <div class="card">
+            <h3>🏦 Số dư hiện tại</h3>
+            <div class="amount balance" id="balance">0 ₫</div>
+        </div>
+    </div>
+
+    <!-- BÀI 3: BIỂU ĐỒ PROGRESS BAR -->
+    <div class="panel">
+        <h2>📈 Biểu đồ thu chi</h2>
+
+        <p>Thu nhập: <strong id="incomeText">0 ₫</strong></p>
+        <div class="progress">
+            <div class="bar income-bar" id="incomeBar"></div>
+        </div>
+
+        <p>Chi tiêu: <strong id="expenseText">0 ₫</strong></p>
+        <div class="progress">
+            <div class="bar expense-bar" id="expenseBar"></div>
+        </div>
+
+        <p id="ratioText">Tỷ lệ chi tiêu: 0%</p>
+    </div>
+
+    <!-- BÀI 2: FORM GIAO DỊCH -->
+    <div class="panel">
+        <h2>➕ Thêm giao dịch mới</h2>
+
+        <form id="transactionForm">
+            <label for="type">Loại giao dịch:</label>
+            <select id="type" required>
+                <option value="">-- Chọn loại --</option>
+                <option value="Thu">Khoản thu</option>
+                <option value="Chi">Khoản chi</option>
+            </select>
+
+            <label for="amount">Số tiền (VNĐ):</label>
+            <input type="number" id="amount"
+                   min="1" step="1"
+                   placeholder="Nhập số tiền" required>
+
+            <label for="category">Danh mục:</label>
+            <select id="category" required>
+                <option value="">-- Chọn danh mục --</option>
+                <option value="Lương">Lương</option>
+                <option value="Làm thêm">Làm thêm</option>
+                <option value="Ăn uống">Ăn uống</option>
+                <option value="Học tập">Học tập</option>
+                <option value="Đi lại">Đi lại</option>
+                <option value="Mua sắm">Mua sắm</option>
+                <option value="Khác">Khác</option>
+            </select>
+
+            <label for="date">Ngày giao dịch:</label>
+            <input type="date" id="date" required>
+
+            <button type="submit">Thêm giao dịch</button>
+            <p id="message" role="status"></p>
+        </form>
+    </div>
+
+    <!-- LỊCH SỬ GIAO DỊCH -->
+    <div class="panel history">
+        <h2>📋 Lịch sử giao dịch</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Ngày</th>
+                    <th>Loại</th>
+                    <th>Danh mục</th>
+                    <th>Số tiền</th>
+                </tr>
+            </thead>
+            <tbody id="transactionList"></tbody>
+        </table>
+
+        <button type="button" id="clearButton">
+            Xóa tất cả giao dịch
+        </button>
+    </div>
+
+</div>
+
+<script>
+    const STORAGE_KEY = "personalFinanceTransactions";
+
+    // Đọc dữ liệu đã lưu khi mở trang
+    let transactions = [];
+
+    try {
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        const parsedData = savedData ? JSON.parse(savedData) : [];
+
+        if (Array.isArray(parsedData)) {
+            transactions = parsedData.filter(t =>
+                t &&
+                (t.type === "Thu" || t.type === "Chi") &&
+                typeof t.amount === "number" &&
+                Number.isFinite(t.amount) &&
+                t.amount > 0 &&
+                typeof t.category === "string" &&
+                typeof t.date === "string"
+            );
+        }
+    } catch (error) {
+        transactions = [];
+    }
+
+    const form = document.getElementById("transactionForm");
+    const message = document.getElementById("message");
+
+    function formatMoney(amount) {
+        return amount.toLocaleString("vi-VN") + " ₫";
+    }
+
+    // Lưu dữ liệu vào LocalStorage
+    function saveData() {
+        try {
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(transactions)
+            );
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // Tính tổng thu, tổng chi, số dư và vẽ biểu đồ
+    function updateDashboard() {
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        transactions.forEach(t => {
+            if (t.type === "Thu") {
+                totalIncome += t.amount;
+            } else {
+                totalExpense += t.amount;
+            }
+        });
+
+        const balance = totalIncome - totalExpense;
+
+        document.getElementById("totalIncome").textContent =
+            formatMoney(totalIncome);
+
+        document.getElementById("totalExpense").textContent =
+            formatMoney(totalExpense);
+
+        document.getElementById("balance").textContent =
+            formatMoney(balance);
+
+        document.getElementById("incomeText").textContent =
+            formatMoney(totalIncome);
+
+        document.getElementById("expenseText").textContent =
+            formatMoney(totalExpense);
+
+        // Thanh tiến trình thể hiện tỷ trọng thu và chi
+        const maxValue = Math.max(totalIncome, totalExpense, 1);
+
+        document.getElementById("incomeBar").style.width =
+            (totalIncome / maxValue * 100) + "%";
+
+        document.getElementById("expenseBar").style.width =
+            (totalExpense / maxValue * 100) + "%";
+
+        // Tỷ lệ chi tiêu so với thu nhập
+        const ratio = totalIncome > 0
+            ? totalExpense / totalIncome * 100
+            : (totalExpense > 0 ? null : 0);
+
+        document.getElementById("ratioText").textContent =
+            ratio === null
+                ? "Tỷ lệ chi tiêu: Chưa có thu nhập"
+                : "Tỷ lệ chi tiêu: " + ratio.toFixed(1) + "%";
+
+        renderTransactions();
+    }
+
+    // Hiển thị lịch sử giao dịch
+    function renderTransactions() {
+        const list = document.getElementById("transactionList");
+        list.replaceChildren();
+
+        transactions.forEach(t => {
+            const row = document.createElement("tr");
+
+            const values = [
+                t.date,
+                t.type,
+                t.category,
+                (t.type === "Thu" ? "+" : "-") +
+                    formatMoney(t.amount)
+            ];
+
+            values.forEach((value, index) => {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+
+                if (index === 1 || index === 3) {
+                    cell.className =
+                        t.type === "Thu" ? "income" : "expense";
+                }
+
+                row.appendChild(cell);
+            });
+
+            list.appendChild(row);
+        });
+    }
+
+    // Thêm giao dịch mới
+    form.addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        const type = document.getElementById("type").value;
+        const amountText = document.getElementById("amount").value;
+        const amount = Number(amountText);
+        const category = document.getElementById("category").value;
+        const date = document.getElementById("date").value;
+
+        if (
+            !type ||
+            amountText.trim() === "" ||
+            !category ||
+            !date
+        ) {
+            message.style.color = "red";
+            message.textContent = "Vui lòng nhập đầy đủ thông tin!";
+            return;
+        }
+
+        if (!Number.isFinite(amount) || amount <= 0) {
+            message.style.color = "red";
+            message.textContent = "Số tiền phải lớn hơn 0!";
+            return;
+        }
+
+        const transaction = { type, amount, category, date };
+
+        transactions.push(transaction);
+
+        if (!saveData()) {
+            transactions.pop();
+            message.style.color = "red";
+            message.textContent =
+                "Không thể lưu dữ liệu. Hãy kiểm tra trình duyệt!";
+            return;
+        }
+
+        updateDashboard();
+
+        message.style.color = "green";
+        message.textContent = "Thêm giao dịch thành công!";
+
+        form.reset();
+    });
+
+    // Xóa tất cả giao dịch
+    document.getElementById("clearButton")
+        .addEventListener("click", function() {
+            if (!confirm("Bạn có chắc muốn xóa tất cả giao dịch?")) {
+                return;
+            }
+
+            const oldTransactions = transactions;
+            transactions = [];
+
+            if (!saveData()) {
+                transactions = oldTransactions;
+                alert("Không thể lưu thay đổi!");
+                return;
+            }
+
+            updateDashboard();
+            message.textContent = "";
+        });
+
+    // Hiển thị dữ liệu đã lưu khi mở trang
+    updateDashboard();
+    // BÀI 4: BẢO MẬT DỮ LIỆU ĐẦU VÀO
+
+function escapeHTML(str) {
+    const entities = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    };
+
+    return String(str).replace(/[&<>"']/g, function (char) {
+        return entities[char];
+    });
+}
+
+// Kiểm tra dữ liệu giao dịch
+function validateTransaction(type, amount, category, date) {
+    if (!type || !category || !date || amount === "") {
+        alert("Vui lòng nhập đầy đủ thông tin!");
+        return false;
+    }
+
+    if (type !== "Thu" && type !== "Chi") {
+        alert("Loại giao dịch không hợp lệ!");
+        return false;
+    }
+
+    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+        alert("Số tiền phải lớn hơn 0!");
+        return false;
+    }
+
+    return true;
+}
+</script>
+</body>
+</html>

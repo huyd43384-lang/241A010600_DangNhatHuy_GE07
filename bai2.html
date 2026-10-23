@@ -1,0 +1,361 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý tài chính cá nhân</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 25px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #1d4ed8;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .card, .form-box, .history {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px #00000010;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            color: #64748b;
+            font-size: 16px;
+        }
+
+        .amount {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .income {
+            color: #16a34a;
+        }
+
+        .expense {
+            color: #dc2626;
+        }
+
+        .balance {
+            color: #2563eb;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 7px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 15px;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        #message {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        .history {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th, td {
+            padding: 13px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #eff6ff;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 12px;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>📊 Quản lý tài chính cá nhân</h1>
+
+    <!-- BÀI 1: TỔNG QUAN -->
+    <div class="cards">
+        <div class="card">
+            <h3>💰 Tổng thu</h3>
+            <div class="amount income" id="totalIncome">0 ₫</div>
+        </div>
+
+        <div class="card">
+            <h3>💸 Tổng chi</h3>
+            <div class="amount expense" id="totalExpense">0 ₫</div>
+        </div>
+
+        <div class="card">
+            <h3>🏦 Số dư hiện tại</h3>
+            <div class="amount balance" id="balance">0 ₫</div>
+        </div>
+    </div>
+
+    <!-- BÀI 2: FORM THÊM GIAO DỊCH -->
+    <div class="form-box">
+        <h2>➕ Thêm giao dịch mới</h2>
+
+        <form id="transactionForm">
+
+            <label for="type">Loại giao dịch:</label>
+            <select id="type" required>
+                <option value="">-- Chọn loại giao dịch --</option>
+                <option value="Thu">Khoản thu</option>
+                <option value="Chi">Khoản chi</option>
+            </select>
+
+            <label for="amount">Số tiền (VNĐ):</label>
+            <input
+                type="number"
+                id="amount"
+                placeholder="Nhập số tiền"
+                min="1"
+                step="1"
+                required
+            >
+
+            <label for="category">Danh mục:</label>
+            <select id="category" required>
+                <option value="">-- Chọn danh mục --</option>
+                <option value="Lương">Lương</option>
+                <option value="Làm thêm">Làm thêm</option>
+                <option value="Ăn uống">Ăn uống</option>
+                <option value="Học tập">Học tập</option>
+                <option value="Đi lại">Đi lại</option>
+                <option value="Mua sắm">Mua sắm</option>
+                <option value="Khác">Khác</option>
+            </select>
+
+            <label for="date">Ngày giao dịch:</label>
+            <input type="date" id="date" required>
+
+            <button type="submit">Thêm giao dịch</button>
+
+            <p id="message" role="status"></p>
+        </form>
+    </div>
+
+    <!-- BẢNG LỊCH SỬ -->
+    <div class="history">
+        <h2>📋 Lịch sử giao dịch</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Ngày</th>
+                    <th>Loại</th>
+                    <th>Danh mục</th>
+                    <th>Số tiền</th>
+                </tr>
+            </thead>
+            <tbody id="transactionList"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    const transactions = [];
+
+    const form = document.getElementById("transactionForm");
+    const message = document.getElementById("message");
+
+    const formatMoney = amount =>
+        amount.toLocaleString("vi-VN") + " ₫";
+
+    function renderTransactions() {
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        const list = document.getElementById("transactionList");
+        list.replaceChildren();
+
+        transactions.forEach(t => {
+            if (t.type === "Thu") {
+                totalIncome += t.amount;
+            } else {
+                totalExpense += t.amount;
+            }
+
+            const row = document.createElement("tr");
+
+            // Tạo ô dữ liệu an toàn
+            const values = [
+                t.date,
+                t.type,
+                t.category,
+                (t.type === "Thu" ? "+" : "-") +
+                    formatMoney(t.amount)
+            ];
+
+            values.forEach((value, index) => {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+
+                if (index === 1 || index === 3) {
+                    cell.className =
+                        t.type === "Thu" ? "income" : "expense";
+                }
+
+                row.appendChild(cell);
+            });
+
+            list.appendChild(row);
+        });
+
+        document.getElementById("totalIncome").textContent =
+            formatMoney(totalIncome);
+
+        document.getElementById("totalExpense").textContent =
+            formatMoney(totalExpense);
+
+        document.getElementById("balance").textContent =
+            formatMoney(totalIncome - totalExpense);
+    }
+
+    form.addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        const type = document.getElementById("type").value;
+        const amountText = document.getElementById("amount").value;
+        const amount = Number(amountText);
+        const category = document.getElementById("category").value;
+        const date = document.getElementById("date").value;
+
+        // Kiểm tra dữ liệu không được bỏ trống
+        if (
+            type === "" ||
+            amountText.trim() === "" ||
+            category === "" ||
+            date === ""
+        ) {
+            message.textContent = "Vui lòng nhập đầy đủ thông tin!";
+            message.style.color = "red";
+            return;
+        }
+
+        // Kiểm tra số tiền phải lớn hơn 0
+        if (!Number.isFinite(amount) || amount <= 0) {
+            message.textContent = "Số tiền phải lớn hơn 0!";
+            message.style.color = "red";
+            return;
+        }
+
+        // Thêm giao dịch vào danh sách
+        transactions.push({
+            type: type,
+            amount: amount,
+            category: category,
+            date: date
+        });
+
+        // Cập nhật giao diện
+        renderTransactions();
+
+        message.textContent = "Thêm giao dịch thành công!";
+        message.style.color = "green";
+
+        form.reset();
+    });
+    // BÀI 4: BẢO MẬT DỮ LIỆU ĐẦU VÀO
+
+function escapeHTML(str) {
+    const entities = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    };
+
+    return String(str).replace(/[&<>"']/g, function (char) {
+        return entities[char];
+    });
+}
+
+// Kiểm tra dữ liệu giao dịch
+function validateTransaction(type, amount, category, date) {
+    if (!type || !category || !date || amount === "") {
+        alert("Vui lòng nhập đầy đủ thông tin!");
+        return false;
+    }
+
+    if (type !== "Thu" && type !== "Chi") {
+        alert("Loại giao dịch không hợp lệ!");
+        return false;
+    }
+
+    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+        alert("Số tiền phải lớn hơn 0!");
+        return false;
+    }
+
+    return true;
+}
+</script>
+
+</body>
+</html>
